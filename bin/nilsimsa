@@ -1,0 +1,18 @@
+#!/usr/bin/env ruby
+require 'rubygems'
+require 'nilsimsa'
+
+if ARGV.size > 0 then
+  ARGV.each do |filename|
+    if FileTest::exists?(filename) then
+      n = Nilsimsa::new
+      n.file(filename)
+      puts n.hexdigest+" #{filename}"
+    else
+      puts "error: can't find '#{filename}'"
+    end
+  end
+else
+  puts "Specify a file to hash"
+end
+
