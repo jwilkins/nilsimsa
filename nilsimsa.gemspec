@@ -13,11 +13,8 @@ SPEC = Gem::Specification.new do |spec|
   spec.require_path = "."
   spec.autorequire = "nilsimsa.rb"
 
-  unfiltered_files = FileList['*', 'examples/*', 'bin/*', 'ext/*']
-  spec.files = unfiltered_files.delete_if do |filename|
-    filename.include?(".gem") || filename.include?("Makefile") ||
-    filename.include?(".so")  || filename.include?(".o")
-  end
+  spec.files = %w(README nilsimsa.gemspec nilsimsa.rb bin/nilsimsa
+                  examples/simple.rb ext/extconf.rb ext/nilsimsa.c)
   spec.executables = ['nilsimsa']
 
   # optional native component
