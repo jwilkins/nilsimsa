@@ -1,5 +1,4 @@
 #!/usr/bin/env ruby
-require 'rubygems'
 require 'nilsimsa'
 
 if ARGV.size > 0 then

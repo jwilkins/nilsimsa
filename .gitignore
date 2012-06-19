@@ -1,0 +1,8 @@
+.bundle
+Gemfile.lock
+*.gem
+ext/Makefile
+ext/*.o
+ext/*.bundle
+ext/*.log
+spec/reports

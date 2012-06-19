@@ -5,7 +5,6 @@
 # inspired by Digest::Nilsimsa-0.06 from Perl CPAN and
 # the original C nilsimsa-0.2.4 implementation by cmeclax
 # http://ixazon.dynip.com/~cmeclax/nilsimsa.html
-
 class Nilsimsa
 
   TRAN =
@@ -45,15 +44,19 @@ class Nilsimsa
   "\x04\x05\x05\x06\x05\x06\x06\x07\x05\x06\x06\x07\x06\x07\x07\x08"
 
   def initialize(*data)
-    @threshold=0; @count=0
-    @acc =Array::new(256,0)
+    @threshold=0;
+    @count=0
+    @acc = Array::new(256,0)
     @lastch0=@lastch1=@lastch2=@lastch3= -1
 
     data.each do |d| update(d) end  if data && (data.size>0)
   end
 
-  def tran3(a,b,c,n)
+  def tran3_orig(a,b,c,n)
     (((TRAN[(a+n)&255]^TRAN[b]*(n+n+1))+TRAN[(c)^TRAN[n]])&255)
+  end
+  def tran3(a,b,c,n)
+    ((((TRAN[(a+n)&255].ord)^(TRAN[b].ord)*(n+n+1))+(TRAN[(c)^(TRAN[n].ord)]).ord)&255)
   end
 
   def update(data)
@@ -83,19 +86,25 @@ class Nilsimsa
   def digest
     @total=0;
     case @count
-      when 0..2:
-      when 3   : @total +=1
-      when 4   : @total +=4
-      else     
-        @total +=(8*@count)-28    
+      when 0..2 then ;
+      when 3   then @total +=1
+      when 4   then @total +=4
+      else @total +=(8*@count)-28
     end
     @threshold=@total/256	
 
-    @code=String::new(
-           "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00" <<
-           "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00")
+    @code="\x00"*32
     (0..255).each do |i|
-      @code[i>>3]+=( ((@acc[i]>@threshold)?(1):(0))<<(i&7) )
+      offset = i>>3
+      cur_val = @code[offset].ord
+      @code[offset] = (cur_val + ( ((@acc[i].ord>@threshold)?(1):(0))<<(i&7) )).chr
+#      cv = @code[i>>3].ord
+#      if @acc[i] > @threshold
+#      #@code[i>>3]+=( (((@acc[i])>@threshold)?(1):(0))<<(i&7) )
+#        @code[cv] = (@code[cv].ord + (1 <<(i&7))).chr
+#      else
+#        @code[cv] = (@code[cv].ord + (0 <<(i&7))).chr
+#      end
     end
 
     @code[0..31].reverse
@@ -126,57 +135,16 @@ class Nilsimsa
   def nilsimsa(otherdigest)
     bits=0; myd=digest
     (0..31).each do |i|
-      bits += POPC[255&myd[i]^otherdigest[i]]
+      bits += POPC[255&myd[i].ord^otherdigest[i].ord].ord
     end
     (128-bits)
   end
-  
 end
 
-def selftest
-  n1 = Nilsimsa::new;
-  n1.update("abcdefgh")
-  puts "abcdefgh:  #{n1.hexdigest=='14c8118000000000030800000004042004189020001308014088003280000078'}"
-  n2 = Nilsimsa::new("abcd","efgh")
-  puts "abcd efgh: #{n2.hexdigest=='14c8118000000000030800000004042004189020001308014088003280000078'}"
-  puts "digest:    #{n1 == n2.digest}"
-  n1.update("ijk")
-  puts "ijk:       #{n1.hexdigest=='14c811840010000c0328200108040630041890200217582d4098103280000078'}"
-  puts "nilsimsa:  #{n1.nilsimsa(n2.digest)==109}"
-  puts
+begin                               # load C core - if available
+  #require "#{File.join(File.dirname(__FILE__), '..', 'ext', 'nilsimsa_native')}"
+rescue LoadError => e
+  # ignore lack of native module
 end
 
-if __FILE__ == $0 then
-  if ARGV.size>0 then
-    begin                               # load C core - if available
-      require 'nilsimsa_native'
-    rescue LoadError => e
-      # ignore lack of native module
-    end
 
-    ARGV.each do |filename|
-      if FileTest::exists?(filename) then
-        n = Nilsimsa::new
-        n.file(filename)
-        puts n.hexdigest+" #{filename}"
-      else
-        puts "error: can't find '#{filename}'"
-      end
-    end
-  else
-    puts 'Running selftest using native ruby version'
-    selftest
-    begin                               # load C core - if available
-      if File.exists?('./nilsimsa_native')
-        require './nilsimsa_native'
-        puts 'Running selftest using compiled nilsimsa in current dir'
-      else 
-        require 'nilsimsa_native'
-        puts 'Running selftest using compiled nilsimsa'
-      end
-      selftest
-    rescue LoadError => e
-      puts "Couldnt run selftest with compiled nilsimsa"
-    end
-  end
-end

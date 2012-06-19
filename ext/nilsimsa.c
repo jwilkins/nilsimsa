@@ -49,6 +49,15 @@
 
 #define tran3(a,b,c,n) (((tran[((a)+(n))&255]^tran[(b)]*((n)+(n)+1))+tran[(c)^tran[n]])&255)
 
+#ifdef HAVE_RUBY_IO_H
+#ifndef RSTRING_PTR
+#define RSTRING_PTR(s) (RSTRING(s))
+#endif
+#ifndef RSTRING_LEN
+#define RSTRING_LEN(s) (RSTRING(s))
+#endif
+#else
+#endif
 
 struct nsrecord {
   int acc[256];  /* counts each trigram's hash */
@@ -256,10 +265,13 @@ rbns_update(VALUE self, VALUE data) {
   char *chdata;
   long chdata_len;
   r = get_nsr( self );
+  VALUE str;
 
   Check_Type( data, T_STRING );
-  chdata = rb_str2cstr( data, &chdata_len );
-  nsr_update( r, chdata, chdata_len );
+
+  str = StringValue(data);
+  //chdata = rb_str2cstr( data, &chdata_len );
+  nsr_update( r, (RSTRING_PTR(str)), (RSTRING_LEN(str)) );
   return data;
 }
 
@@ -269,18 +281,25 @@ rbns_nilsimsa(VALUE self, VALUE other) {
   char *d1;
   char *d2;
 
-  d1 = rb_str2cstr( rb_funcall( self, rb_intern( "digest" ), 0 ), &len );
-  if (len < NSR_CODE_LEN) {
+  VALUE str1;
+  VALUE str2;
+
+  //d1 = rb_str2cstr( rb_funcall( self, rb_intern( "digest" ), 0 ), &len );
+  str1 =  rb_funcall( self, rb_intern( "digest" ), 0 );
+  str1 = StringValue(str1);
+  if(RSTRING_LEN(str1) < NSR_CODE_LEN) {
     return Qnil;
   }
 
   Check_Type( other, T_STRING );
-  d2 = rb_str2cstr( other, &len );
-  if (len < NSR_CODE_LEN) {
+  //d2 = rb_str2cstr( other, &len );
+  str2 = StringValue( other);
+  if (RSTRING_LEN(str2) < NSR_CODE_LEN) {
     return Qnil;
   }
 
-  return INT2NUM( nilsimsa( d1, d2 ) );
+  //return INT2NUM( nilsimsa( d1, d2 ) );
+  return INT2NUM( nilsimsa( RSTRING_PTR(str1), RSTRING_PTR(str2)) );
 }
 
 VALUE
