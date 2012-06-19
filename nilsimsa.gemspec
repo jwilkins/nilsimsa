@@ -8,7 +8,7 @@ SPEC = Gem::Specification.new do |spec|
   spec.has_rdoc = true
   spec.extra_rdoc_files = ["README.md"]
 
-  spec.files = %w(Gemfile Rakefile README nilsimsa.gemspec
+  spec.files = %w(Gemfile Rakefile README.md nilsimsa.gemspec
                   lib/nilsimsa.rb
                   bin/nilsimsa
                   examples/simple.rb
